@@ -5,122 +5,169 @@
 [![Tests](https://github.com/wilycode/translation-languages/actions/workflows/tests.yml/badge.svg)](https://github.com/wilycode/translation-languages/actions/workflows/tests.yml)
 [![Packagist](https://img.shields.io/packagist/v/wilycode/translation-languages)](https://packagist.org/packages/wilycode/translation-languages)
 
-**Ready-to-use pluralization rules for 25 languages and formatters for 27 locales, built for PHP 8.4+.** Install the complete library with Composer **or copy only the language classes and locale files your application needs**. Unused languages do not have to be downloaded or kept in your project.
+**Language-specific pluralization rules and locale configuration files for PHP 8.4+.** Includes **25 languages**, a Brazilian Portuguese pluralization variant, and **27 regional configurations** for dates, numbers, and currencies.
 
-> **WilyCode PHP Ecosystem**
+Use the complete Composer package, **or download only the languages your application needs**. You do not have to install the entire language collection.
+
+> ### WilyCode PHP Ecosystem
 >
-> This library is part of **[WilyCode](https://github.com/wilycode/wilycode)** — independent PHP packages with their own repositories, releases and Composer installations.
+> Part of the **[WilyCode PHP Ecosystem](https://github.com/wilycode/wilycode)** — independent, reusable PHP components, each with its own repository, versions, and Composer package.
 >
-> **[Explore the WilyCode ecosystem →](https://github.com/wilycode/wilycode)**
+> **[Explore all WilyCode packages →](https://github.com/wilycode/wilycode)**
 
-## Table of contents
+## Contents
 
-- [Introduction](#introduction)
+- [Overview](#overview)
 - [Installation](#installation)
-- [Install only selected languages (without the full package)](#install-only-selected-languages-without-the-full-package)
-- [Quick start](#quick-start)
+- [Quick start (Composer)](#quick-start-composer)
+- [Install only selected languages](#install-only-selected-languages)
 - [Supported languages and locales](#supported-languages-and-locales)
-- [Choose only the languages your application needs](#choose-only-the-languages-your-application-needs)
-- [Customize locale resources](#customize-locale-resources)
-- [Add a new language](#add-a-new-language)
 - [Pluralization](#pluralization)
-- [Date, number and currency formatting](#date-number-and-currency-formatting)
+- [Locale formatting](#locale-formatting)
+- [Custom locale configuration](#custom-locale-configuration)
+- [Add a new language](#add-a-new-language)
 - [API reference](#api-reference)
-- [Integrations](#integrations)
+- [Upgrading from v0.1.0](#upgrading-from-v010)
 - [Limitations and security](#limitations-and-security)
-- [Development and license](#development-and-license)
+- [Development](#development)
+- [Related packages](#related-packages)
+- [License](#license)
 
-## Introduction
+## Overview
 
-`wilycode/translation-languages` supplies **concrete language rules and locale formatters** for the [wilycode/translation](https://github.com/wilycode/translation) contracts.
+This package supplies **language data and rules**, not the locale formatting engine or a message translator.
 
-| Component | Purpose |
+| Provided here | Provided by [`wilycode/translation`](https://github.com/wilycode/translation) |
 | --- | --- |
-| `Language\En`, `Language\Pl`, `Language\De`, and 22 more | Implement `LanguageInterface` with plural-form indexes for 25 languages. |
-| `LocaleFormatter\LocaleFormatter` | Format values from a PHP locale configuration array. |
-| `LocaleFormatter\LocaleFormatterFactory` | Load regional configuration files by locale code, with fallback. |
-| `LocaleFormatter\LocaleFormatterEn` | Convenient English (US) formatter. |
-| `LocaleFormatter\LocaleFormatterPl` | Convenient Polish formatter. |
-| `src/resources/locales/*.php` | Regional date, time, number, and currency defaults. |
+| `Language\Pl`, `Language\En`, and other language classes | `LanguageInterface`, `TranslatorInterface`, `DateStyle` |
+| `Language\PtBr` for Brazilian Portuguese | `LocaleFormatter` and `LocaleFormatterFactory` |
+| `src/resources/locales/*.php` regional configuration files | `LocaleFormatterInterface`, `MessageFormatter` |
 
-**What this package does not do:** it does not translate message keys, store translated strings, pick a user language automatically, or bundle an ICU/CLDR translation engine. Use a translator implementation (or your own) for message lookup.
+The distinction matters: **`LocaleFormatter` and `LocaleFormatterFactory` belong to the core `wilycode/translation` package since v0.1.1**. They are no longer part of this repository.
+
+Pluralization rules return **form indexes**, not translated text. Translation message lookup is the responsibility of a separate translator implementation.
 
 ## Installation
 
-**Two ways to use this library:**
+**Requirements:** PHP 8.4 or newer and `wilycode/translation:^0.1.1`.
 
-| Approach | What gets installed | Best for |
+There are two supported approaches:
+
+| Approach | Files added to your project | Updates |
 | --- | --- | --- |
-| [Copy selected languages](#install-only-selected-languages-without-the-full-package) | Only the language and locale files you choose, plus the shared `wilycode/translation` contracts | Small applications, fixed language lists, minimal application files |
-| Install with Composer | The full library: 25 language definitions and 27 regional locale resources | Applications using many languages, easy package updates |
+| **[Composer](#quick-start-composer)** | All 25 languages and 27 regional configurations, plus the core package | Composer-managed |
+| **[Selected files](#install-only-selected-languages)** | Only copied language classes and locale files; install just the core package with Composer | You maintain copied files |
 
-**Requirements:** PHP 8.4+ and the shared interfaces from [`wilycode/translation`](https://github.com/wilycode/translation). The base package is a dependency for either approach; you **do not need to install `wilycode/translation-languages`** when copying individual implementations.
-
-For the complete library, run:
+### Complete library via Composer
 
 ```bash
-composer require wilycode/translation-languages
+composer require wilycode/translation-languages:^0.2
 ```
 
-Composer installs the entire `translation-languages` package, including languages the application does not use. If you want only one or two languages on disk, use the selective installation guide below instead. The built-in formatters do not require `ext-intl`.
+Composer also installs the required core library. Choose this if your project needs many languages or you want automatic package updates.
 
-## Install only selected languages (without the full package)
-
-**You can use individual files from this GitHub repository without installing `wilycode/translation-languages`.** For example, an application that only supports Polish needs only one pluralization class and one locale configuration, in addition to two shared formatter classes if it needs date, number and currency formatting.
-
-### 1. Install only the shared contracts
+### Minimal application via selected files
 
 ```bash
-composer require wilycode/translation:^0.1
+composer require wilycode/translation:^0.1.1
 ```
 
-This installs the **base contracts package**, not the collection of 25 language definitions. If your application already depends on `wilycode/translation`, skip this step.
+Then download only the relevant `Language/*.php` classes and/or `resources/locales/*.php` data files from this repository. **Do not install `wilycode/translation-languages`** for this option.
 
-### 2. Download exactly the files you need
+## Quick start (Composer)
 
-Open each source file on GitHub and use **Download raw file** (or copy its contents). For a Polish-only application:
+The examples below assume that you installed the **complete** `wilycode/translation-languages` package.
 
-| File in this repository | Where to place it in your application | Needed for |
+### Pluralization
+
+```php
+<?php
+
+require __DIR__ . '/vendor/autoload.php';
+
+use WilyCode\Translation\Language\Pl;
+
+$polish = new Pl();
+
+echo $polish->getCode();                // pl
+echo $polish->getNumberOfPluralForms(); // 3
+echo $polish->getPluralForm(1);        // 0
+echo $polish->getPluralForm(2);        // 1
+echo $polish->getPluralForm(5);        // 2
+```
+
+### Dates, numbers, and currencies
+
+The formatter itself comes from `wilycode/translation`. The region files come from this package:
+
+```php
+<?php
+
+require __DIR__ . '/vendor/autoload.php';
+
+use WilyCode\Translation\DateStyle;
+use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
+
+$factory = new LocaleFormatterFactory(
+    __DIR__ . '/vendor/wilycode/translation-languages/src/resources/locales',
+    'en-US',
+);
+
+$formatter = $factory->forCode('pl-PL');
+$date = new DateTimeImmutable('2026-07-08');
+
+echo $formatter->formatDate($date);                  // 08.07.2026
+echo $formatter->formatDate($date, DateStyle::Long); // 8 lipca 2026 r.
+echo $formatter->formatNumber(1234.5);              // 1 234,50
+echo $formatter->formatMoney(1234.5);               // PLN 1 234,50
+```
+
+Paths above assume the example script is in your project root. In other layouts, pass the actual absolute location of your installed package's `src/resources/locales` directory.
+
+## Install only selected languages
+
+You can use this repository **as a source of individual files**, without downloading or keeping the whole collection in your application.
+
+For a **Polish-only** application:
+
+### Step 1 — Install the common functionality
+
+```bash
+composer require wilycode/translation:^0.1.1
+```
+
+This provides `LanguageInterface`, `LocaleFormatter`, and `LocaleFormatterFactory`, but none of the 25 language definitions or regional data files.
+
+### Step 2 — Download two files
+
+| Download from this repository | Copy to your application | Use |
 | --- | --- | --- |
-| [`src/Language/Pl.php`](src/Language/Pl.php) | `app/Translation/Language/Pl.php` | Polish pluralization |
-| [`src/LocaleFormatter/LocaleFormatter.php`](src/LocaleFormatter/LocaleFormatter.php) | `app/Translation/LocaleFormatter/LocaleFormatter.php` | Date, number and currency formatting |
-| [`src/LocaleFormatter/LocaleFormatterFactory.php`](src/LocaleFormatter/LocaleFormatterFactory.php) | `app/Translation/LocaleFormatter/LocaleFormatterFactory.php` | Loading locale files |
+| [`src/Language/Pl.php`](src/Language/Pl.php) | `app/Translation/Language/Pl.php` | Polish plural forms |
 | [`src/resources/locales/pl-pl.php`](src/resources/locales/pl-pl.php) | `resources/locales/pl-pl.php` | Polish regional formatting |
-
-**If you need pluralization only**, copy just `Pl.php` and omit the formatter files. **If you need formatting only**, omit `Pl.php` and copy the formatter files and `pl-pl.php`.
-
-Your application directory will look like this for both features:
 
 ```text
 app/
 └── Translation/
-    ├── Language/
-    │   └── Pl.php
-    └── LocaleFormatter/
-        ├── LocaleFormatter.php
-        └── LocaleFormatterFactory.php
+    └── Language/
+        └── Pl.php
 resources/
 └── locales/
     └── pl-pl.php
 ```
 
-### 3. Use your application's namespace
+For **pluralization only**, copy `Pl.php`; for **regional formatting only**, copy `pl-pl.php`. Both features are independent. You **do not** need to copy `LocaleFormatter.php`, its factory, or other languages.
 
-The copied PHP classes originally declare `WilyCode\Translation\...` namespaces. **Change only their namespace declarations** to match your application's `App\` PSR-4 autoload mapping; keep the `use WilyCode\Translation\LanguageInterface`, `LocaleFormatterInterface` and `DateStyle` imports pointing to the base contracts.
+To download a file, open its link above on GitHub and choose **Download raw file**. Prefer an explicit release/tag when you want reproducible copies.
 
-In `app/Translation/Language/Pl.php`:
+### Step 3 — Adapt the namespace of the copied class
+
+In `app/Translation/Language/Pl.php`, replace the original namespace declaration with:
 
 ```php
 namespace App\Translation\Language;
 ```
 
-In both `app/Translation/LocaleFormatter/*.php` files:
-
-```php
-namespace App\Translation\LocaleFormatter;
-```
-
-Your application's `composer.json` should map `App\` to `app/` (this mapping is already present in many frameworks):
+Keep `use WilyCode\Translation\LanguageInterface;` as it is. Ensure your application has an `App\` PSR-4 mapping to `app/` (common in frameworks such as Laravel):
 
 ```json
 {
@@ -132,9 +179,9 @@ Your application's `composer.json` should map `App\` to `app/` (this mapping is 
 }
 ```
 
-The JSON above illustrates the relevant autoload section; **merge it into your existing `composer.json`**, do not replace your full Composer configuration. If you add or change the mapping, run `composer dump-autoload`.
+**Merge** this mapping with your existing `composer.json`; do not replace the full file. If you change the mapping, run `composer dump-autoload`. The `pl-pl.php` locale configuration is a PHP array and needs no namespace change.
 
-### 4. Use the selected language
+### Step 4 — Use only your selected files
 
 ```php
 <?php
@@ -142,337 +189,73 @@ The JSON above illustrates the relevant autoload section; **merge it into your e
 require __DIR__ . '/vendor/autoload.php';
 
 use App\Translation\Language\Pl;
-use App\Translation\LocaleFormatter\LocaleFormatterFactory;
 use WilyCode\Translation\DateStyle;
+use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
 
 $language = new Pl();
 $factory = new LocaleFormatterFactory(__DIR__ . '/resources/locales', 'pl-PL');
 $formatter = $factory->forCode('pl-PL');
 
-echo $language->getPluralForm(2); // 1 (few)
+echo $language->getPluralForm(2); // 1
 echo $formatter->formatDate(
     new DateTimeImmutable('2026-07-08'),
     DateStyle::Long,
 ); // 8 lipca 2026 r.
 ```
 
-**Adding English later?** Download `src/Language/En.php` into `app/Translation/Language/En.php` and `src/resources/locales/en-us.php` into `resources/locales/en-us.php`, then change the class namespace to `App\Translation\Language`. No other language files are required. If your app uses locale aliases such as `pl` rather than `pl-PL`, also copy the corresponding alias file (`pl.php`), because aliases include the regional file from the same directory.
+**Need English later?** Copy [`En.php`](src/Language/En.php) to `app/Translation/Language/En.php` and [`en-us.php`](src/resources/locales/en-us.php) to `resources/locales/en-us.php`. Update the namespace of `En.php`. No other language files are required.
 
-This is an **opt-in source-copy approach**, not an extra Composer feature: updates to the source repository will **not automatically update copied files**. Review upstream changes when upgrading your application. Keep copies under version control, preserve the MIT license attribution, and download code only from a source you trust. The convenience formatters `LocaleFormatterPl` and `LocaleFormatterEn` load resources via paths relative to their original locations; when using custom application directories, prefer the factory shown above.
-
-## Quick start
-
-The examples in this section assume the **full `wilycode/translation-languages` package is installed with Composer**. For apps using copied files instead, follow [selective installation](#install-only-selected-languages-without-the-full-package) and use the `App\Translation\...` namespaces shown there.
-
-### Plural rules
-
-```php
-<?php
-
-require __DIR__ . '/vendor/autoload.php';
-
-use WilyCode\Translation\Language\Pl;
-
-$polish = new Pl();
-
-echo $polish->getCode();              // pl
-echo $polish->getNumberOfPluralForms(); // 3
-
-echo $polish->getPluralForm(1);  // 0
-echo $polish->getPluralForm(2);  // 1
-echo $polish->getPluralForm(5);  // 2
-```
-
-The numbers `0`, `1` and `2` are **plural-form indexes**, not translated words. The message translator chooses the corresponding text.
-
-### Regional formatting
-
-```php
-<?php
-
-require __DIR__ . '/vendor/autoload.php';
-
-use WilyCode\Translation\DateStyle;
-use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
-
-$factory = new LocaleFormatterFactory(
-    __DIR__ . '/vendor/wilycode/translation-languages/src/resources/locales',
-    'en-US',
-);
-
-$formatter = $factory->forCode('pl-PL');
-$date = new DateTimeImmutable('2026-07-08 12:34:56');
-
-echo $formatter->formatDate($date);                  // 08.07.2026
-echo $formatter->formatDate($date, DateStyle::Long); // 8 lipca 2026 r.
-echo $formatter->formatNumber(1234.5);              // 1 234,50
-echo $formatter->formatMoney(1234.5);               // PLN 1 234,50
-```
-
-The resource path above is relative to an application's root directory containing `vendor/`. In other layouts, pass the correct absolute directory.
+**Important:** the factory looks for an exact locale file, then a base-language alias, then the configured default. If your application passes `pl` instead of `pl-PL`, also copy [`pl.php`](src/resources/locales/pl.php) **and** its referenced `pl-pl.php` into the same directory. Source-copied files are maintained by your application: they will **not** receive automatic Composer updates.
 
 ## Supported languages and locales
 
-A **language rule** (for example, `Language\Ru`) returns a plural-form index. A **locale resource** (for example, `ru-RU`) controls date, time, decimal separators and currency. They are independent: you choose both in your application's configuration.
+There are **25 languages**, plus `PtBr` as a separate pluralization variant for Brazilian Portuguese (**26 classes**). Locale data supplies **27 region-specific files**; base-language alias files are provided in addition to those regional resources.
 
-### Language rules (25 languages)
-
-| Language | Code | PHP class | Integer plural forms |
-| --- | --- | --- | ---: |
-| English | `en` | `Language\En` | 2 |
-| Polish | `pl` | `Language\Pl` | 3 |
-| German | `de` | `Language\De` | 2 |
-| French | `fr` | `Language\Fr` | 3 |
-| Spanish | `es` | `Language\Es` | 3 |
-| Italian | `it` | `Language\It` | 3 |
-| Portuguese (Portugal) | `pt` | `Language\Pt` | 3 |
-| Dutch | `nl` | `Language\Nl` | 2 |
-| Czech | `cs` | `Language\Cs` | 3 |
-| Slovak | `sk` | `Language\Sk` | 3 |
-| Ukrainian | `uk` | `Language\Uk` | 3 |
-| Russian | `ru` | `Language\Ru` | 3 |
-| Swedish | `sv` | `Language\Sv` | 2 |
-| Danish | `da` | `Language\Da` | 2 |
-| Norwegian Bokmål | `nb` | `Language\Nb` | 2 |
-| Finnish | `fi` | `Language\Fi` | 2 |
-| Romanian | `ro` | `Language\Ro` | 3 |
-| Hungarian | `hu` | `Language\Hu` | 2 |
-| Greek | `el` | `Language\El` | 2 |
-| Turkish | `tr` | `Language\Tr` | 2 |
-| Japanese | `ja` | `Language\Ja` | 1 |
-| Chinese (Simplified) | `zh` | `Language\Zh` | 1 |
-| Korean | `ko` | `Language\Ko` | 1 |
-| Arabic | `ar` | `Language\Ar` | 6 |
-| Hindi | `hi` | `Language\Hi` | 2 |
-| Portuguese (Brazil, regional variant) | `pt` | `Language\PtBr` | 3 |
-
-`Pt` follows Portuguese as used in Portugal; `PtBr` implements the **Brazilian Portuguese** variant. Both return `pt` as their language code; select `PtBr` explicitly for `pt-BR`. All rule indexes are **zero-based**, and the ordering of categories is implementation-specific. For example Arabic uses indexes `0=zero, 1=one, 2=two, 3=few, 4=many, 5=other`; do not assume the English `0=singular, 1=plural` model applies everywhere.
-
-For integer counts, French, Spanish, Italian and Portuguese distinguish **exact positive multiples of one million**, so they expose three plural forms (`one`, `many`, `other`). This follows CLDR integer cardinal categories; translation files must provide all returned indexes. `Japanese`, `Chinese` and `Korean` have a single plural category. `LanguageInterface` accepts integers; fractional-number plural rules are out of scope.
-
-### Plural index conventions
-
-Plural indexes refer to the corresponding **position in your translation forms array**. They are *not* universal across languages:
-
-| Language rules | Index meaning (in order) |
-| --- | --- |
-| `En`, `De`, `Nl`, `Sv`, `Da`, `Nb`, `Fi`, `Hu`, `El`, `Tr`, `Hi` | `one`, `other` |
-| `Pl`, `Ru`, `Uk` | `one`, `few`, `many` |
-| `Cs`, `Sk`, `Ro` | `one`, `few`, `other` |
-| `Fr`, `Es`, `It`, `Pt`, `PtBr` | `one`, `many`, `other` |
-| `Ar` | `zero`, `one`, `two`, `few`, `many`, `other` |
-| `Ja`, `Zh`, `Ko` | `other` |
-
-For example, a Czech translator needs **three** translated variants in this order, whereas a Japanese translator needs **one**. Hindi places `0` and `1` in the `one` category; French does so too, but its million category introduces a third form.
-
-### Regional formatters (27 locales)
-
-| Locale | Resource | Default currency |
+| Language | Class | Region file |
 | --- | --- | --- |
-| `en-US` | `en-us.php` | USD |
-| `en-GB` | `en-gb.php` | GBP |
-| `pl-PL` | `pl-pl.php` | PLN |
-| `de-DE` | `de-de.php` | EUR |
-| `fr-FR` | `fr-fr.php` | EUR |
-| `es-ES` | `es-es.php` | EUR |
-| `it-IT` | `it-it.php` | EUR |
-| `pt-PT` | `pt-pt.php` | EUR |
-| `pt-BR` | `pt-br.php` | BRL |
-| `nl-NL` | `nl-nl.php` | EUR |
-| `cs-CZ` | `cs-cz.php` | CZK |
-| `sk-SK` | `sk-sk.php` | EUR |
-| `uk-UA` | `uk-ua.php` | UAH |
-| `ru-RU` | `ru-ru.php` | RUB |
-| `sv-SE` | `sv-se.php` | SEK |
-| `da-DK` | `da-dk.php` | DKK |
-| `nb-NO` | `nb-no.php` | NOK |
-| `fi-FI` | `fi-fi.php` | EUR |
-| `ro-RO` | `ro-ro.php` | RON |
-| `hu-HU` | `hu-hu.php` | HUF |
-| `el-GR` | `el-gr.php` | EUR |
-| `tr-TR` | `tr-tr.php` | TRY |
-| `ja-JP` | `ja-jp.php` | JPY |
-| `zh-CN` | `zh-cn.php` | CNY |
-| `ko-KR` | `ko-kr.php` | KRW |
-| `ar-SA` | `ar-sa.php` | SAR |
-| `hi-IN` | `hi-in.php` | INR |
+| Arabic | `Ar` | `ar-sa.php` |
+| Chinese (Simplified) | `Zh` | `zh-cn.php` |
+| Czech | `Cs` | `cs-cz.php` |
+| Danish | `Da` | `da-dk.php` |
+| Dutch | `Nl` | `nl-nl.php` |
+| English (US / UK) | `En` | `en-us.php`, `en-gb.php` |
+| Finnish | `Fi` | `fi-fi.php` |
+| French | `Fr` | `fr-fr.php` |
+| German | `De` | `de-de.php` |
+| Greek | `El` | `el-gr.php` |
+| Hindi | `Hi` | `hi-in.php` |
+| Hungarian | `Hu` | `hu-hu.php` |
+| Italian | `It` | `it-it.php` |
+| Japanese | `Ja` | `ja-jp.php` |
+| Korean | `Ko` | `ko-kr.php` |
+| Norwegian Bokmål | `Nb` | `nb-no.php` |
+| Polish | `Pl` | `pl-pl.php` |
+| Portuguese (Portugal / Brazil) | `Pt`, `PtBr` | `pt-pt.php`, `pt-br.php` |
+| Romanian | `Ro` | `ro-ro.php` |
+| Russian | `Ru` | `ru-ru.php` |
+| Slovak | `Sk` | `sk-sk.php` |
+| Spanish | `Es` | `es-es.php` |
+| Swedish | `Sv` | `sv-se.php` |
+| Turkish | `Tr` | `tr-tr.php` |
+| Ukrainian | `Uk` | `uk-ua.php` |
 
-Each language also has a short alias such as `fr.php` or `ja.php` pointing to its default regional file. The built-in aliases choose one **default region**, not a universal configuration for all countries using that language. `LocaleFormatterEn` and `LocaleFormatterPl` remain shortcuts for `en-US` and `pl-PL`; the factory handles every region.
+Language classes use the namespace `WilyCode\Translation\Language` when installed through Composer. Their plural-form indexes and count are available through `getNumberOfPluralForms()` and `getPluralForm(int $count)`.
 
-## Choose only the languages your application needs
-
-There are **two distinct choices**:
-
-- **Only selected languages on disk:** use [selective installation](#install-only-selected-languages-without-the-full-package) to download and maintain just the PHP classes and locale files that your project needs. No `wilycode/translation-languages` Composer installation is required.
-- **The full package installed, but only selected languages enabled:** install with Composer and configure the supported locales in the application. Composer downloads all 25 language definitions, but the example below instantiates only the selected ones.
-
-The following example assumes the **full package is installed with Composer**:
-
-```php
-<?php
-
-use WilyCode\Translation\Language\En;
-use WilyCode\Translation\Language\Pl;
-use WilyCode\Translation\LanguageInterface;
-use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
-
-$supported = [
-    'en-US' => new En(),
-    'pl-PL' => new Pl(),
-];
-
-$requestedLocale = 'pl-PL'; // For example, from a user profile.
-$locale = array_key_exists($requestedLocale, $supported) ? $requestedLocale : 'en-US';
-
-/** @var LanguageInterface $language */
-$language = $supported[$locale];
-
-$factory = new LocaleFormatterFactory(
-    __DIR__ . '/vendor/wilycode/translation-languages/src/resources/locales',
-    'en-US',
-);
-
-$formatter = $factory->forCode($locale);
-```
-
-With **selective installation**, use your own `App\Translation\...` classes and `resources/locales` directory instead, as shown earlier. Your application is responsible for deciding which locales to support; neither approach enables additional languages automatically.
-
-## Customize locale resources
-
-**Do not edit `vendor/`.** This section is for applications that installed the **full package with Composer** but want to customize date patterns, currency defaults or separators. Copy only the desired locale *resource files* into an application-owned directory. With [selective installation](#install-only-selected-languages-without-the-full-package), the resources are already in your application and can be edited directly.
-
-For example, on macOS/Linux, from your application's root:
-
-```bash
-mkdir -p resources/locales
-cp vendor/wilycode/translation-languages/src/resources/locales/en-us.php resources/locales/
-cp vendor/wilycode/translation-languages/src/resources/locales/pl-pl.php resources/locales/
-```
-
-Edit `resources/locales/pl-pl.php` in your application, then point the factory to your files:
-
-```php
-use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
-
-$factory = new LocaleFormatterFactory(
-    __DIR__ . '/resources/locales',
-    'en-US',
-);
-
-$formatter = $factory->forCode('pl-PL');
-```
-
-You only need to copy the locales you intend to support **and the default fallback resource** (here `en-us.php`). The factory reads from **one directory**; it does not merge application resources with `vendor/` automatically. If you use aliases such as `pl`, copy `pl.php` too, or request the full region code (`pl-PL`). Aliases load sibling regional files, so copying an alias alone is not sufficient.
-
-Configuration is stored in regular PHP files returning arrays; this also makes it possible to define additional resources directly in the application. These files are executable PHP, so use **trusted, version-controlled configuration**, never user-uploaded PHP.
-
-## Add a new language
-
-You can add languages **without editing `vendor/` or changing this package**. The built-in set already includes Spanish, French, Italian, etc.; the example below deliberately uses **Indonesian (`id-ID`)**, which is *not* bundled. Fully editable examples are provided in [`examples/Language/Id.php`](examples/Language/Id.php) and [`examples/resources/locales/id-id.php`](examples/resources/locales/id-id.php) in the GitHub source repository.
-
-### 1. Implement a language rule
-
-Create `app/Language/Id.php` with the `App\` PSR-4 namespace configured by your application:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace App\Language;
-
-use WilyCode\Translation\LanguageInterface;
-
-final class Id implements LanguageInterface
-{
-    public function getCode(): string
-    {
-        return 'id';
-    }
-
-    public function getNumberOfPluralForms(): int
-    {
-        return 1;
-    }
-
-    public function getPluralForm(int $count): int
-    {
-        return 0;
-    }
-}
-```
-
-Indonesian has one cardinal plural category, so every integer maps to index `0`. For languages with multiple plural categories, implement and test the appropriate CLDR rules rather than copying the Indonesian example.
-
-### 2. Create the regional resource
-
-Create `resources/locales/id-id.php` in **your application**:
-
-```php
-<?php
-
-declare(strict_types=1);
-
-return [
-    'locale' => 'id-ID',
-    'date' => [
-        'formats' => [
-            'short' => 'd/m/Y',
-            'medium' => 'd/m/Y',
-            'long' => 'j F Y',
-        ],
-        'long_month_case' => 'genitive',
-        'months_genitive' => [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
-        ],
-    ],
-    'time' => ['formats' => ['short' => 'H:i', 'medium' => 'H:i:s', 'long' => 'H:i:s']],
-    'number' => [
-        'decimal_separator' => ',',
-        'thousands_separator' => '.',
-        'currency' => 'IDR',
-        'fraction_digits' => 0,
-    ],
-];
-```
-
-The example includes month names so a long date does not unexpectedly fall back to English. The built-in factory reads **one directory** at a time: if you require both custom `id-ID` and built-in `en-US` as a fallback, copy `en-us.php` into the same application directory.
-
-### 3. Enable the language in your application
-
-```php
-use App\Language\Id;
-use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
-
-$language = new Id();
-$factory = new LocaleFormatterFactory(__DIR__ . '/resources/locales', 'id-ID');
-$formatter = $factory->forCode('id-ID');
-
-$language->getPluralForm(2);     // 0
-$formatter->formatMoney(1234.5); // IDR 1.235
-```
-
-Make sure your application's `App\` namespace is registered with Composer and run `composer dump-autoload` when changing PSR-4 mappings.
+A **language rule** controls plural forms, whereas a **regional resource** controls dates, number separators, and default currency. They are selected separately. `PtBr` reports the language code `pt`, so explicitly choose that class for Brazilian Portuguese pluralization.
 
 ## Pluralization
 
-`LanguageInterface` returns an integer index that identifies a plural form. It is up to a translator implementation to map that index to messages.
+`getPluralForm()` returns a **zero-based integer index**, not a word. It should be used with translation message forms in the exact order expected by that language class.
 
 | Count | `En` | `Pl` | `De` |
 | ---: | ---: | ---: | ---: |
 | 0 | 1 | 2 | 1 |
 | 1 | 0 | 0 | 0 |
 | 2 | 1 | 1 | 1 |
-| 4 | 1 | 1 | 1 |
 | 5 | 1 | 2 | 1 |
-| 12 | 1 | 2 | 1 |
 | 22 | 1 | 1 | 1 |
 
-The `Pl` rule correctly handles the exceptions around values such as `12–14`. These indexes should never be treated as translated output.
-
-The suite covers all 25 language rules and the separate `PtBr` variant against representative CLDR cardinal integer cases, including `0`, `1`, `2`, `5`, `11`, `21`, `100` and `1,000,000`. For example:
+Some languages are considerably more complex. For example:
 
 ```php
 use WilyCode\Translation\Language\Ar;
@@ -480,86 +263,126 @@ use WilyCode\Translation\Language\Ja;
 use WilyCode\Translation\Language\Pt;
 use WilyCode\Translation\Language\PtBr;
 
-(new Ar())->getPluralForm(0);     // 0 — zero
-(new Ar())->getPluralForm(2);     // 2 — two
-(new Ar())->getPluralForm(11);    // 4 — many
-(new Ja())->getPluralForm(21);    // 0 — other (the sole form)
-(new Pt())->getPluralForm(0);     // 2 — other (Portugal)
-(new PtBr())->getPluralForm(0);   // 0 — one (Brazil)
+(new Ar())->getPluralForm(0);    // 0 (zero)
+(new Ar())->getPluralForm(2);    // 2 (two)
+(new Ja())->getPluralForm(5);    // 0 (only form)
+(new Pt())->getPluralForm(0);    // 2 (Portugal: other)
+(new PtBr())->getPluralForm(0);  // 0 (Brazil: one)
 ```
 
-**Plural category positions are a contract between the chosen language rule and your translator's message forms.** Switching the language rule may require a different number and order of translated forms.
+These rules operate on **integer counts**. They are not full ICU/CLDR plural formatting and do not handle fractional plural operands. The rules should be tested with the actual message forms used by your translator.
 
+## Locale formatting
 
-## Date, number and currency formatting
+The core `LocaleFormatterFactory` reads a PHP configuration from the resource directory you specify:
 
 ```php
-use DateTimeImmutable;
 use WilyCode\Translation\DateStyle;
-use WilyCode\Translation\LocaleFormatter\LocaleFormatterEn;
-use WilyCode\Translation\LocaleFormatter\LocaleFormatterPl;
+use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
 
-$date = new DateTimeImmutable('2026-07-08 12:34:56');
+$factory = new LocaleFormatterFactory(
+    __DIR__ . '/vendor/wilycode/translation-languages/src/resources/locales',
+    'en-US',
+);
 
-echo (new LocaleFormatterEn())->formatDate($date); // 07/08/2026
-echo (new LocaleFormatterPl())->formatDate($date); // 08.07.2026
-echo (new LocaleFormatterPl())->formatDate($date, DateStyle::Long); // 8 lipca 2026 r.
+$date = new DateTimeImmutable('2026-07-08');
+
+$factory->forCode('en-US')->formatDate($date);                // 07/08/2026
+$factory->forCode('pl-PL')->formatDate($date);                // 08.07.2026
+$factory->forCode('pl-PL')->formatDate($date, DateStyle::Short); // 2026-07-08
+$factory->forCode('pl-PL')->formatDate($date, DateStyle::Long);  // 8 lipca 2026 r.
 ```
 
-| Method | Behavior |
-| --- | --- |
-| `getLocale()` | Return locale code from the configuration. |
-| `getDateFormat(DateStyle $style = DateStyle::Medium)` | Return PHP date pattern. |
-| `formatDate(DateTimeInterface $date, DateStyle $style = DateStyle::Medium)` | Render a date. |
-| `formatDateTime(DateTimeInterface $dateTime, DateStyle $style = DateStyle::Medium)` | Render date and time. |
-| `formatNumber(float\|int $number, int $fractionDigits = 2)` | Render number using configured separators. |
-| `formatMoney(float\|int $amount, ?string $currency = null, ?int $fractionDigits = null)` | Format number and prepend currency code. |
+The default date style is **`DateStyle::Medium`**, not `Short`. `en-US` and `pl-PL` use `Y-m-d` for their **short** date configuration, while their **medium** formats are `m/d/Y` and `d.m.Y` respectively.
 
-The short date format is locale-configurable: `en-US` and `pl-PL` ship with ISO `Y-m-d`, whereas `de-DE` ships with `d.m.Y`. Localized month names are supplied for long-date formats that use `F` (including genitive month forms for Polish, Czech, Slovak, Ukrainian, Russian, Finnish and Greek). Use `date.long_month_case = "nom"` where nominative month mappings are provided. Japanese, Chinese and Korean long-date patterns use numeric months and local date characters instead of English month names.
+Locale files define PHP `DateTime` patterns, separators, currency codes, and some local month-name maps. `formatMoney()` produces a **currency code followed by a formatted number** (e.g. `PLN 1 234,50`), not automatic currency symbols or conversion. Indian locale `hi-IN` supports Indian digit grouping; `ar-SA` does not automatically convert Western digits to Arabic-Indic digits.
 
-The `hi-IN` resource supports Indian digit grouping (e.g. `12,34,567.89`). Formatting otherwise uses PHP numbers and separators: `ar-SA` does not automatically change Western digits to Arabic-Indic digits. `JPY` and `KRW` default to zero currency fraction digits; `formatNumber()` still defaults to two decimals unless overridden.
+## Custom locale configuration
 
-**Currency formatting is intentionally simple:** the result is `CODE formatted-number` (for example `PLN 1 234,50`), not automatic locale-aware currency symbols or exchange-rate conversion. For full CLDR/ICU behavior, use a specialized `intl`-based implementation instead.
+You can use your own locale resources without editing `vendor/`:
+
+```text
+resources/
+└── locales/
+    ├── en-us.php
+    └── pl-pl.php
+```
+
+```php
+use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
+
+$factory = new LocaleFormatterFactory(__DIR__ . '/resources/locales', 'en-US');
+$polish = $factory->forCode('pl-PL');
+```
+
+Copy and modify the regional array files in your application. The factory searches **only the configured directory**: it does not merge files from multiple directories or fall back to resources installed elsewhere. If you choose `en-US` as a default, `en-us.php` must also exist in your custom directory if the requested locale is unavailable.
+
+## Add a new language
+
+The library is extensible without modifying any code inside `vendor/`. An example for **Indonesian (`id-ID`)**, which is not one of the bundled 25 languages, is available at:
+
+- [`examples/Language/Id.php`](examples/Language/Id.php) — implements `LanguageInterface` (one plural form).
+- [`examples/resources/locales/id-id.php`](examples/resources/locales/id-id.php) — region-specific date, number, and currency configuration.
+
+Copy these into your application as `app/Language/Id.php` and `resources/locales/id-id.php` respectively, then ensure your `App\` autoload mapping is present.
+
+```php
+use App\Language\Id;
+use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
+
+$language = new Id();
+$factory = new LocaleFormatterFactory(__DIR__ . '/resources/locales', 'id-ID');
+
+$language->getPluralForm(10);            // 0
+$factory->forCode('id-ID')->formatMoney(1234.5); // IDR 1.235
+```
+
+The example PHP files are available in the **GitHub repository** and are excluded from the Composer distribution. If you create your own rule, implement the three methods of `LanguageInterface` and verify the locale's pluralization categories rather than reusing rules from another language.
 
 ## API reference
 
-| Class | Public entry point | Notes |
-| --- | --- | --- |
-| `Language\En` | `new En()` | Implements `LanguageInterface`; two plural forms. |
-| `Language\Pl` | `new Pl()` | Implements `LanguageInterface`; three plural forms. |
-| `Language\De` | `new De()` | Implements `LanguageInterface`; two plural forms. |
-| `Language\Fr`, `Language\Es`, `Language\Ar`, etc. | `new Fr()`, `new Es()`, `new Ar()` | 25 language classes in total; all implement `LanguageInterface` and expose the same three methods. |
-| `Language\PtBr` | `new PtBr()` | Regional Portuguese pluralization for Brazil (still returns `getCode() === "pt"`). |
-| `LocaleFormatter\LocaleFormatter` | `new LocaleFormatter(array $config)` | Implements `LocaleFormatterInterface` with configuration-based formats. |
-| `LocaleFormatter\LocaleFormatterFactory` | `new LocaleFormatterFactory(string $resourcesDir, string $defaultCode = 'en-US')` | Loads a locale resource directory. |
-| `LocaleFormatter\LocaleFormatterFactory` | `forCode(?string $code): LocaleFormatter` | Returns a formatter, applying fallback rules. |
-| `LocaleFormatter\LocaleFormatterEn` | `new LocaleFormatterEn()` | US English defaults. |
-| `LocaleFormatter\LocaleFormatterPl` | `new LocaleFormatterPl()` | Polish defaults. |
+This package exposes **language classes and PHP configuration arrays**. Its language classes implement `WilyCode\Translation\LanguageInterface`:
 
-`LocaleFormatterFactory::forCode()` normalizes case and underscores (`EN_gb` → `en-gb`), tries the exact resource name, then its base-language alias (e.g. `pl`), and finally the configured default code. Invalid locale identifiers (including path traversal characters) are treated as missing and fall back to the configured default. It throws `RuntimeException` if the resource directory is missing or no resource can be found. A PHP resource file must return the expected configuration array.
-
-For formatting method signatures see the table in [Date, number and currency formatting](#date-number-and-currency-formatting). The base interfaces are defined in [`wilycode/translation`](https://github.com/wilycode/translation).
-
-## Integrations
-
-| Package | Purpose |
+| Method | Meaning |
 | --- | --- |
-| [`wilycode/translation`](https://github.com/wilycode/translation) | Shared translator, language and locale formatter contracts (required). |
-| [`wilycode/translation-array`](https://github.com/wilycode/translation-array) | Planned array-backed message translator. |
-| [`wilycode/translation-database`](https://github.com/wilycode/translation-database) | Planned database-backed message translator. |
+| `getCode(): string` | Language identifier, such as `pl` or `en`. |
+| `getNumberOfPluralForms(): int` | Number of supported plural-form indexes. |
+| `getPluralForm(int $count): int` | Index selected for an integer count. |
 
-Translations, language choice, and routing are intentionally separate responsibilities. The packages above can be installed independently according to your application's architecture.
+**Provided by core `wilycode/translation:^0.1.1`:**
+
+| API | Purpose |
+| --- | --- |
+| `LocaleFormatterFactory::__construct(string $resourcesDir, string $defaultCode = 'en-US')` | Select the source directory and fallback locale. |
+| `LocaleFormatterFactory::forCode(?string $code): LocaleFormatter` | Load a locale and fall back if necessary. |
+| `LocaleFormatter::formatDate(DateTimeInterface $date, DateStyle $style = DateStyle::Medium): string` | Format a localized date. |
+| `LocaleFormatter::formatDateTime(DateTimeInterface $dateTime, DateStyle $style = DateStyle::Medium): string` | Format a localized date and time. |
+| `LocaleFormatter::formatNumber(float\|int $number, int $fractionDigits = 2): string` | Format a number. |
+| `LocaleFormatter::formatMoney(float\|int $amount, ?string $currency = null, ?int $fractionDigits = null): string` | Format a number with a currency code. |
+
+Factory codes are case-insensitive and underscores are normalized (`EN_gb` becomes `en-gb`). Its fallback order is: exact code, base-language alias file (if present), then default. An invalid code falls back to the default; if no resource can be found, it throws `RuntimeException`. A copied base alias such as `pl.php` requires its sibling regional file `pl-pl.php`.
+
+## Upgrading from v0.1.0
+
+**v0.2.0 reorganized package ownership**. Applications using the old formatter implementations should:
+
+1. Require `wilycode/translation:^0.1.1` (the dependency is already required by `translation-languages:^0.2`).
+2. Change formatter imports to `WilyCode\Translation\LocaleFormatter\LocaleFormatter` and `WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory` from the **core package**. The namespaces are the same; the Composer package supplying them changed.
+3. Replace `LocaleFormatterEn` and `LocaleFormatterPl` with the shared factory and `forCode('en-US')` / `forCode('pl-PL')`.
+4. If you copy files manually, copy only the desired `Language/*.php` classes and regional resource files, not the formatters.
+
+The `v0.1.0` tag remains available for projects that have not migrated.
 
 ## Limitations and security
 
-- The factory does **not** search multiple locale directories or merge configurations across them.
-- Base-language aliases (`en.php`, `pl.php`, `de.php`, `fr.php`, etc.) require their regional sibling files if copied into a custom directory.
-- The bundled regions are defaults, not complete CLDR/ICU implementations; unlisted regional variants need their own resources. In particular, script variants and numbering systems are not inferred automatically.
-- Month names are localized via explicit long-date maps where provided; arbitrary date patterns outside the `DateStyle::Long` path and raw PHP `F`/`M` formatting may still use English.
-- Locale files are trusted executable PHP. Do not load paths derived from untrusted input or accept user-uploaded locale files.
-- This package does not escape HTML, perform message lookup, validate a locale against an application's supported list, convert currencies, shape native-script digits, or handle CLDR fractional cardinal categories.
+- This package supplies plural-form rules and regional configuration data, **not** translated messages or automatic application language selection.
+- PHP locale files are **executable PHP**, not passive JSON. Only use trusted source files; never load PHP code uploaded by untrusted users.
+- The formatter uses a single configured locale directory. It does not merge separate application and vendor resource directories.
+- A `DateStyle::Long` month-name map is used only where the resource defines one. Raw PHP date formatting and other custom styles may use English month names.
+- This is not a complete CLDR/ICU implementation. There is no fractional cardinal pluralization, currency conversion, automatic digit shaping, or HTML escaping.
+- Manually copied language files do not receive updates automatically. Keep them in version control and review fixes from upstream.
 
-## Development and license
+## Development
 
 ```bash
 composer validate --strict
@@ -567,6 +390,16 @@ composer install
 composer test
 ```
 
-GitHub Actions runs the PHPUnit suite on PHP 8.4. See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [CHANGELOG.md](CHANGELOG.md) for release history.
+The tests run on PHP 8.4 via GitHub Actions. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
-Licensed under the [MIT License](LICENSE). Copyright © 2026 Simon Piter.
+## Related packages
+
+| Package | Purpose |
+| --- | --- |
+| [`wilycode/translation`](https://github.com/wilycode/translation) | Core contracts, `MessageFormatter`, `LocaleFormatter`, and `LocaleFormatterFactory`. |
+| [`wilycode/translation-array`](https://github.com/wilycode/translation-array) | Array-based message translator (separate package; install when available). |
+| [`wilycode/translation-database`](https://github.com/wilycode/translation-database) | Database-backed message translator (separate package; install when available). |
+
+## License
+
+MIT — [LICENSE](LICENSE). Copyright © 2026 Simon Piter.
