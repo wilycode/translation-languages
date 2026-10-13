@@ -5,7 +5,7 @@
 [![Tests](https://github.com/wilycode/translation-languages/actions/workflows/tests.yml/badge.svg)](https://github.com/wilycode/translation-languages/actions/workflows/tests.yml)
 [![Packagist](https://img.shields.io/packagist/v/wilycode/translation-languages)](https://packagist.org/packages/wilycode/translation-languages)
 
-**Ready-to-use pluralization rules for 25 languages and formatters for 27 locales, built for PHP 8.4+.** Select the languages your application supports, format dates, numbers and money, and override regional settings without editing `vendor/`.
+**Ready-to-use pluralization rules for 25 languages and formatters for 27 locales, built for PHP 8.4+.** Install the complete library with Composer **or copy only the language classes and locale files your application needs**. Unused languages do not have to be downloaded or kept in your project.
 
 > **WilyCode PHP Ecosystem**
 >
@@ -17,6 +17,7 @@
 
 - [Introduction](#introduction)
 - [Installation](#installation)
+- [Install only selected languages (without the full package)](#install-only-selected-languages-without-the-full-package)
 - [Quick start](#quick-start)
 - [Supported languages and locales](#supported-languages-and-locales)
 - [Choose only the languages your application needs](#choose-only-the-languages-your-application-needs)
@@ -46,15 +47,122 @@
 
 ## Installation
 
-**Requirements:** PHP 8.4+ and `wilycode/translation:^0.1`. The base contracts are installed by Composer automatically. The built-in formatters do not require `ext-intl`.
+**Two ways to use this library:**
+
+| Approach | What gets installed | Best for |
+| --- | --- | --- |
+| [Copy selected languages](#install-only-selected-languages-without-the-full-package) | Only the language and locale files you choose, plus the shared `wilycode/translation` contracts | Small applications, fixed language lists, minimal application files |
+| Install with Composer | The full library: 25 language definitions and 27 regional locale resources | Applications using many languages, easy package updates |
+
+**Requirements:** PHP 8.4+ and the shared interfaces from [`wilycode/translation`](https://github.com/wilycode/translation). The base package is a dependency for either approach; you **do not need to install `wilycode/translation-languages`** when copying individual implementations.
+
+For the complete library, run:
 
 ```bash
 composer require wilycode/translation-languages
 ```
 
-After the first stable release, you can pin the minor version with `composer require wilycode/translation-languages:^0.1`.
+Composer installs the entire `translation-languages` package, including languages the application does not use. If you want only one or two languages on disk, use the selective installation guide below instead. The built-in formatters do not require `ext-intl`.
+
+## Install only selected languages (without the full package)
+
+**You can use individual files from this GitHub repository without installing `wilycode/translation-languages`.** For example, an application that only supports Polish needs only one pluralization class and one locale configuration, in addition to two shared formatter classes if it needs date, number and currency formatting.
+
+### 1. Install only the shared contracts
+
+```bash
+composer require wilycode/translation:^0.1
+```
+
+This installs the **base contracts package**, not the collection of 25 language definitions. If your application already depends on `wilycode/translation`, skip this step.
+
+### 2. Download exactly the files you need
+
+Open each source file on GitHub and use **Download raw file** (or copy its contents). For a Polish-only application:
+
+| File in this repository | Where to place it in your application | Needed for |
+| --- | --- | --- |
+| [`src/Language/Pl.php`](src/Language/Pl.php) | `app/Translation/Language/Pl.php` | Polish pluralization |
+| [`src/LocaleFormatter/LocaleFormatter.php`](src/LocaleFormatter/LocaleFormatter.php) | `app/Translation/LocaleFormatter/LocaleFormatter.php` | Date, number and currency formatting |
+| [`src/LocaleFormatter/LocaleFormatterFactory.php`](src/LocaleFormatter/LocaleFormatterFactory.php) | `app/Translation/LocaleFormatter/LocaleFormatterFactory.php` | Loading locale files |
+| [`src/resources/locales/pl-pl.php`](src/resources/locales/pl-pl.php) | `resources/locales/pl-pl.php` | Polish regional formatting |
+
+**If you need pluralization only**, copy just `Pl.php` and omit the formatter files. **If you need formatting only**, omit `Pl.php` and copy the formatter files and `pl-pl.php`.
+
+Your application directory will look like this for both features:
+
+```text
+app/
+└── Translation/
+    ├── Language/
+    │   └── Pl.php
+    └── LocaleFormatter/
+        ├── LocaleFormatter.php
+        └── LocaleFormatterFactory.php
+resources/
+└── locales/
+    └── pl-pl.php
+```
+
+### 3. Use your application's namespace
+
+The copied PHP classes originally declare `WilyCode\Translation\...` namespaces. **Change only their namespace declarations** to match your application's `App\` PSR-4 autoload mapping; keep the `use WilyCode\Translation\LanguageInterface`, `LocaleFormatterInterface` and `DateStyle` imports pointing to the base contracts.
+
+In `app/Translation/Language/Pl.php`:
+
+```php
+namespace App\Translation\Language;
+```
+
+In both `app/Translation/LocaleFormatter/*.php` files:
+
+```php
+namespace App\Translation\LocaleFormatter;
+```
+
+Your application's `composer.json` should map `App\` to `app/` (this mapping is already present in many frameworks):
+
+```json
+{
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}
+```
+
+The JSON above illustrates the relevant autoload section; **merge it into your existing `composer.json`**, do not replace your full Composer configuration. If you add or change the mapping, run `composer dump-autoload`.
+
+### 4. Use the selected language
+
+```php
+<?php
+
+require __DIR__ . '/vendor/autoload.php';
+
+use App\Translation\Language\Pl;
+use App\Translation\LocaleFormatter\LocaleFormatterFactory;
+use WilyCode\Translation\DateStyle;
+
+$language = new Pl();
+$factory = new LocaleFormatterFactory(__DIR__ . '/resources/locales', 'pl-PL');
+$formatter = $factory->forCode('pl-PL');
+
+echo $language->getPluralForm(2); // 1 (few)
+echo $formatter->formatDate(
+    new DateTimeImmutable('2026-07-08'),
+    DateStyle::Long,
+); // 8 lipca 2026 r.
+```
+
+**Adding English later?** Download `src/Language/En.php` into `app/Translation/Language/En.php` and `src/resources/locales/en-us.php` into `resources/locales/en-us.php`, then change the class namespace to `App\Translation\Language`. No other language files are required. If your app uses locale aliases such as `pl` rather than `pl-PL`, also copy the corresponding alias file (`pl.php`), because aliases include the regional file from the same directory.
+
+This is an **opt-in source-copy approach**, not an extra Composer feature: updates to the source repository will **not automatically update copied files**. Review upstream changes when upgrading your application. Keep copies under version control, preserve the MIT license attribution, and download code only from a source you trust. The convenience formatters `LocaleFormatterPl` and `LocaleFormatterEn` load resources via paths relative to their original locations; when using custom application directories, prefer the factory shown above.
 
 ## Quick start
+
+The examples in this section assume the **full `wilycode/translation-languages` package is installed with Composer**. For apps using copied files instead, follow [selective installation](#install-only-selected-languages-without-the-full-package) and use the `App\Translation\...` namespaces shown there.
 
 ### Plural rules
 
@@ -193,7 +301,12 @@ Each language also has a short alias such as `fr.php` or `ja.php` pointing to it
 
 ## Choose only the languages your application needs
 
-**Recommended: install the package once with Composer; select supported languages in your application configuration.** You do not need to copy `src/` or change the package to disable unused languages. Only the selected classes and locale resources are instantiated/loaded by the examples below; Composer still installs the small package as a whole.
+There are **two distinct choices**:
+
+- **Only selected languages on disk:** use [selective installation](#install-only-selected-languages-without-the-full-package) to download and maintain just the PHP classes and locale files that your project needs. No `wilycode/translation-languages` Composer installation is required.
+- **The full package installed, but only selected languages enabled:** install with Composer and configure the supported locales in the application. Composer downloads all 25 language definitions, but the example below instantiates only the selected ones.
+
+The following example assumes the **full package is installed with Composer**:
 
 ```php
 <?php
@@ -203,13 +316,12 @@ use WilyCode\Translation\Language\Pl;
 use WilyCode\Translation\LanguageInterface;
 use WilyCode\Translation\LocaleFormatter\LocaleFormatterFactory;
 
-// Your application's supported locales, e.g. from configuration.
 $supported = [
     'en-US' => new En(),
     'pl-PL' => new Pl(),
 ];
 
-$requestedLocale = 'pl-PL'; // For example, a user profile setting.
+$requestedLocale = 'pl-PL'; // For example, from a user profile.
 $locale = array_key_exists($requestedLocale, $supported) ? $requestedLocale : 'en-US';
 
 /** @var LanguageInterface $language */
@@ -221,15 +333,13 @@ $factory = new LocaleFormatterFactory(
 );
 
 $formatter = $factory->forCode($locale);
-
-// $language selects the plural form; $formatter formats dates and money.
 ```
 
-**No automatic locale detection or global language registry is included.** Your application decides which locale is permitted for each request or user. If you prefer no additional package dependency for a very small application, you may implement `LanguageInterface` and `LocaleFormatterInterface` directly instead.
+With **selective installation**, use your own `App\Translation\...` classes and `resources/locales` directory instead, as shown earlier. Your application is responsible for deciding which locales to support; neither approach enables additional languages automatically.
 
 ## Customize locale resources
 
-**Do not edit `vendor/`.** To change date patterns, currency defaults or separators, copy only the desired locale *resource files* into an application-owned directory. This is optional; the built-in defaults work without copying.
+**Do not edit `vendor/`.** This section is for applications that installed the **full package with Composer** but want to customize date patterns, currency defaults or separators. Copy only the desired locale *resource files* into an application-owned directory. With [selective installation](#install-only-selected-languages-without-the-full-package), the resources are already in your application and can be edited directly.
 
 For example, on macOS/Linux, from your application's root:
 
